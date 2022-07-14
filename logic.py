@@ -39,10 +39,11 @@ def get_next_board(board, rules, slice_func, edges, c_func, state_dict=None):
         ns = board[slice_func(*pos)]
         ns = edges(board, ns, *pos)
         if state_dict != None:
-            next_state = state_dict[tuple(ns)]
+            ns_key = tuple(ns.ravel())
+            next_state = state_dict[ns_key]
             if next_state == None:
-                state_dict[tuple(ns)] = get_next_state(rules, c_func(ns), ns)
-                next_state = state_dict[tuple(ns)]
+                state_dict[ns_key] = get_next_state(rules, c_func(ns), ns)
+                next_state = state_dict[ns_key]
         else:
             next_state = get_next_state(rules, c_func(ns), ns)
         new_board[pos] = next_state
