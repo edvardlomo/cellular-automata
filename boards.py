@@ -2,7 +2,34 @@ from logic import *
 from collections import defaultdict
 import numpy as np
 
-def cell_auta_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=None, c_func=None, state_dict=defaultdict(lambda:None)):
+
+def get_board(w,h,rnd=0):
+    return (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
+
+def moore_neighbors():
+    """Returns functions allowing for moore neighbors"""
+    # Slice function 
+    slice_func = lambda i, j: np.s_[max(i - 1,0):i + 2, max(j-1, 0):j + 2]
+
+    # Edge cases
+    def edges_f(board, ns, pos_i, pos_j):
+        i,j = 1,1
+        if pos_i == 0:
+            i -= 1
+        if pos_j == 0:
+            j -= 1
+        c = ns[j,i]
+        ns = defaultdict(lambda:0,zip(*np.unique(ns, return_counts=True)))
+        ns["c"] = c
+        return ns
+
+    edges = edges_f
+
+    # Cell function
+    c_func = lambda ns: ns["c"]
+    return slice_func, edges, c_func
+
+def cell_auto_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
     """Returns a 1D board with n cells, rules are given by t. If wanted a cell in middle is turned on with mid, or it can be randomised with rnd."""
 
     # Rules
@@ -34,7 +61,7 @@ def cell_auta_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=
     if c_func == None:
         c_func = lambda ns: ns[1]
 
-    args = (rules, slice_func, edges, c_func, state_dict)
+    args = (rules, slice_func, edges, c_func)
     progress = lambda b: get_next_board(b, *args)
 
     board = (np.random.rand(n) < rnd)
@@ -42,7 +69,7 @@ def cell_auta_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=
         board[n//2] = 1
     return board, progress
 
-def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None, state_dict=defaultdict(lambda:None)):
+def conways_game_of_life(w, h, rnd=0, rules=None):
     """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on conway's game of life"""
 
     # Rules
@@ -52,71 +79,123 @@ def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c
         cond3 = (lambda c, ns: c == 0 and ns[1] == 3),1
         rules = [cond1, cond2, cond3]
     
-    # Slice function 
-    if slice_func == None:
-        slice_func = lambda i, j: np.s_[max(i - 1,0):i + 2, max(j-1, 0):j + 2]
 
-    # Edge cases
-    def edges_f(board, ns, pos_i, pos_j):
-        i,j = 1,1
-        if pos_i == 0:
-            i -= 1
-        if pos_j == 0:
-            j -= 1
-        c = ns[j,i]
-        ns = defaultdict(lambda:0,zip(*np.unique(ns, return_counts=True)))
-        ns["c"] = c
-        return ns
-    if edges == None:
-        edges = edges_f
+    # Moore neighbors
+    slice_func, edges, c_func = moore_neighbors()
 
-    # Cell function
-    if c_func == None:
-        c_func = lambda ns: ns["c"]
-        #c_func = lambda ns: ns[1,1]
-
-    args = (rules, slice_func, edges, c_func, state_dict)
+    args = (rules, slice_func, edges, c_func)
     progress = lambda b: get_next_board(b, *args)
 
-    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
-    return board, progress
+    return get_board(w,h,rnd), progress
 
-def wireworld(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None, state_dict=defaultdict(lambda:None)):
-    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on conway's game of life"""
+def wireworld(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
+    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on wireworld by Brian Silverman."""
+
+    # Rules
+    wire = 1
+    electron_head = 4
+    electron_tail = 2
+    if rules == None:
+        cond1 = (lambda c, ns: c == electron_head),electron_tail
+        cond2 = (lambda c, ns: c == electron_tail),wire
+        cond3 = (lambda c, ns: c == wire and ns[electron_head] in [1,2]),electron_head
+        cond4 = (lambda c, ns: c == wire),wire
+        rules = [cond1, cond2, cond3, cond4]
+
+    # Moore neighbors
+    slice_func, edges, c_func = moore_neighbors()
+
+    args = (rules, slice_func, edges, c_func)
+    progress = lambda b: get_next_board(b, *args)
+
+    return get_board(w,h,rnd), progress
+
+def brians_brain(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
+    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on Brian's brain by Brian Silverman."""
 
     # Rules
     if rules == None:
-        cond1 = (lambda c, ns: c == 2),3
-        cond2 = (lambda c, ns: c == 3),1
-        cond3 = (lambda c, ns: c == 1 and ns[2] in [1,2]),2
-        cond4 = (lambda c, ns: c == 1),1
-        rules = [cond1, cond2, cond3, cond4]
-    
-    # Slice function 
-    if slice_func == None:
-        slice_func = lambda i, j: np.s_[max(i - 1,0):i + 2, max(j-1, 0):j + 2]
+        cond1 = (lambda c, ns: c == 0 and ns[1] == 2), 1
+        cond2 = (lambda c, ns: c == 1), 2
+        cond3 = (lambda c, ns: c == 2), 0
+        rules = [cond1, cond2, cond3]
 
-    # Edge cases
-    def edges_f(board, ns, pos_i, pos_j):
-        i,j = 1,1
-        if pos_i == 0:
-            i -= 1
-        if pos_j == 0:
-            j -= 1
-        c = ns[j,i]
-        ns = defaultdict(lambda:0,zip(*np.unique(ns, return_counts=True)))
-        ns["c"] = c
-        return ns
-    if edges == None:
-        edges = edges_f
+    # Moore neighbors
+    slice_func, edges, c_func = moore_neighbors()
 
-    # Cell function
-    if c_func == None:
-        c_func = lambda ns: ns["c"]
-
-    args = (rules, slice_func, edges, c_func, state_dict)
+    args = (rules, slice_func, edges, c_func)
     progress = lambda b: get_next_board(b, *args)
 
     board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
-    return board, progress
+    return get_board(w,h,rnd), progress
+
+def traffic_model(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
+    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on Biham-Middleton-Levine traffic model."""
+
+    # Rules
+    road = 0
+    car_rm = 2
+    car_ru = 3
+    car_bm = 4
+    car_bu = 5
+    if rules == None:
+        c0 = (lambda c, ns: c == road), road
+        c1 = (lambda c, ns: c == car_rm), car_ru
+        c2 = (lambda c, ns: c == car_ru), car_rm
+        c3 = (lambda c, ns: c == car_bm), car_bu
+        c4 = (lambda c, ns: c == car_bu), car_bm
+        rules = [c0, c1, c2, c3, c4]
+
+    # Edge cases
+    def edges_f(board, ns, pos_i, pos_j):
+        ns = defaultdict(lambda:0)
+        ns["c"] = board[pos_i, pos_j]
+        ns["l"] = board[pos_i, pos_j - 1]
+        if pos_j == board.shape[1] - 1:
+            ns["r"] = board[pos_i, 0]
+        else:
+            ns["r"] = board[pos_i, pos_j + 1]
+        ns["t"] = board[pos_i - 1, pos_j]
+        if pos_i == board.shape[1] - 1:
+            ns["b"] = board[0, pos_j]
+        else:
+            ns["b"] = board[pos_i + 1,  pos_j]
+
+        # Needed for stuck car logic
+        if ns["c"] == road and ns["l"] == car_rm:
+            ns["c"] = car_rm
+        if ns["c"] == road and ns["t"] == car_bm:
+            ns["c"] = car_bm
+        elif ns["c"] == car_rm and ns["l"] != car_rm:
+            l = board.shape[1]
+            for j in range(1, l):
+                front_car = board[pos_i, (pos_j + j) % l]
+                if front_car == road:
+                    ns["c"] = road
+                    break
+                elif front_car == car_bu:
+                    break
+        elif ns["c"] == car_bm and ns["t"] != car_bm:
+            l = board.shape[0]
+            for i in range(1, l):
+                front_car = board[(pos_i + i) % l, pos_j]
+                if front_car == road:
+                    ns["c"] = road
+                    break
+                elif front_car == car_ru:
+                    break
+        return ns
+
+    edges = edges_f
+
+    # Cell function
+    c_func = lambda ns: ns["c"]
+
+    args = (rules, slice_func, edges, c_func)
+    progress = lambda b: get_next_board(b, *args)
+
+    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
+    return get_board(w,h,rnd), progress
+
+
 

@@ -8,9 +8,11 @@ import pygame
 
 black = (0,0,0)
 white = (255,255,255)
+gray = (200,200,200)
 blue = (0,0,255)
+dark_blue = (0,0,170)
 red = (255,0,0)
-
+dark_red = (170,0,0)
 
 def show(screen, W,H, board, cell_display):
     if len(board.shape) == 1:
@@ -23,9 +25,14 @@ def show(screen, W,H, board, cell_display):
             cell_display[c](x, y, s)
 
 def __main__():
-    #board, progress = cell_auta_1d(100, 182, mid=True)
-    #board, progress = conways_game_of_life(70, 70, state_dict=None, rnd=0.5)
-    board, progress = wireworld(70, 70, state_dict=None, rnd=0)
+    #board, progress = cell_auto_1d(100, 182, mid=True)
+    dim, rnd = 70, 0.5
+    examples = [(conways_game_of_life, (dim,dim,rnd)),
+            (wireworld, (dim,dim)),
+            (brians_brain, (dim,dim, rnd)),
+            (traffic_model, (80, 80))]
+    e,args = examples[-1]
+    board, progress = e(*args)
     history = np.array([board])
 
     # graphics
@@ -40,10 +47,11 @@ def __main__():
         calc_pos = lambda pos: (np.floor(pos[1]/s).astype('int'), np.floor(pos[0]/s).astype('int'))
     
     # Display cells
-    cell_display = {0: (lambda x, y, s: None),
-            1: (lambda x, y, s: pygame.draw.rect(screen, white, pygame.Rect(x,y,s,s))),
+    cell_display = {1: (lambda x, y, s: pygame.draw.rect(screen, white, pygame.Rect(x,y,s,s))),
             2: (lambda x, y, s: pygame.draw.rect(screen, red, pygame.Rect(x,y,s,s))),
-            3: (lambda x, y, s: pygame.draw.rect(screen, blue, pygame.Rect(x,y,s,s)))}
+            3: (lambda x, y, s: pygame.draw.rect(screen, dark_red, pygame.Rect(x,y,s,s))),
+            4: (lambda x, y, s: pygame.draw.rect(screen, blue, pygame.Rect(x,y,s,s))),
+            5: (lambda x, y, s: pygame.draw.rect(screen, dark_blue, pygame.Rect(x,y,s,s)))}
     cell_display = defaultdict(lambda: lambda x, y, s:None, cell_display)
 
     history_bool = len(board.shape) == 1
@@ -62,6 +70,7 @@ def __main__():
             (pygame.K_8,8), (pygame.K_9,9),]
     while loop_bool:
         tn = round(time.time()*acc)
+        keys = pygame.key.get_pressed()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 loop_bool = False
@@ -83,6 +92,17 @@ def __main__():
                         else:
                             right_state = state
                         break
+            if keys[pygame.K_LCTRL] and keys[pygame.K_r]:
+                board = get_board(*args)
+            elif keys[pygame.K_LCTRL] and keys[pygame.K_0]:
+                e,args = examples[0]
+                board, progress = e(*args)
+            elif keys[pygame.K_LCTRL] and keys[pygame.K_1]:
+                e,args = examples[1]
+                board, progress = e(*args)
+            elif keys[pygame.K_LCTRL] and keys[pygame.K_2]:
+                e,args = examples[2]
+                board, progress = e(*args)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1: # Left click
                     left_mouse = True
