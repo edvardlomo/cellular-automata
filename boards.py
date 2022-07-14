@@ -7,14 +7,14 @@ def cell_auta_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=
 
     # Rules
     if rules == None:
-        cond1 = lambda c, ns: c == 1 and all(ns == [1,1,1])
-        cond2 = lambda c, ns: c == 1 and all(ns == [1,1,0])
-        cond3 = lambda c, ns: c == 0 and all(ns == [1,0,1])
-        cond4 = lambda c, ns: c == 0 and all(ns == [1,0,0])
-        cond5 = lambda c, ns: c == 1 and all(ns == [0,1,1])
-        cond6 = lambda c, ns: c == 1 and all(ns == [0,1,0])
-        cond7 = lambda c, ns: c == 0 and all(ns == [0,0,1])
-        cond8 = lambda c, ns: c == 0 and all(ns == [0,0,0])
+        cond1 = lambda c, ns: c == 1 and np.array_equal(ns, [1,1,1])
+        cond2 = lambda c, ns: c == 1 and np.array_equal(ns, [1,1,0])
+        cond3 = lambda c, ns: c == 0 and np.array_equal(ns, [1,0,1])
+        cond4 = lambda c, ns: c == 0 and np.array_equal(ns, [1,0,0])
+        cond5 = lambda c, ns: c == 1 and np.array_equal(ns, [0,1,1])
+        cond6 = lambda c, ns: c == 1 and np.array_equal(ns, [0,1,0])
+        cond7 = lambda c, ns: c == 0 and np.array_equal(ns, [0,0,1])
+        cond8 = lambda c, ns: c == 0 and np.array_equal(ns, [0,0,0])
         conds = [cond1,cond2,cond3,cond4,cond5,cond6,cond7,cond8]
         b = bin(t)[2:]
         b = "0"*(8-len(b))+b
@@ -47,9 +47,9 @@ def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c
 
     # Rules
     if rules == None:
-        cond1 = lambda c, ns: c == 1 and ns.sum() - 1 < 2
-        cond2 = lambda c, ns: c == 1 and ns.sum() - 1 > 3
-        cond3 = lambda c, ns: c == 0 and ns.sum() == 3
+        cond1 = lambda c, ns: c == 1 and ns[1] - 1 < 2
+        cond2 = lambda c, ns: c == 1 and ns[1] - 1 > 3
+        cond3 = lambda c, ns: c == 0 and ns[1] == 3
         rules = [(cond1, 0), (cond2, 0), (cond3, 1)]
     
     # Slice function 
@@ -58,26 +58,27 @@ def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c
 
     # Edge cases
     def edges_f(board, ns, pos_i, pos_j):
+        i,j = 1,1
         if pos_i == 0:
-            ns = np.c_[np.zeros(ns.shape[0]), ns]
-        elif pos_i == board.shape[0] - 1:
-            ns = np.c_[ns, np.zeros((ns.shape[0], 1))]
+            i -= 1
         if pos_j == 0:
-            ns = np.r_[np.zeros((1,ns.shape[1])), ns]
-        elif pos_j == board.shape[0] - 1:
-            ns = np.r_[ns, np.zeros((1,ns.shape[1]))]
+            j -= 1
+        c = ns[j,i]
+        ns = defaultdict(lambda:0,zip(*np.unique(ns, return_counts=True)))
+        ns["c"] = c
         return ns
     if edges == None:
         edges = edges_f
 
     # Cell function
     if c_func == None:
-        c_func = lambda ns: ns[1,1]
+        c_func = lambda ns: ns["c"]
+        #c_func = lambda ns: ns[1,1]
 
     args = (rules, slice_func, edges, c_func, state_dict)
     progress = lambda b: get_next_board(b, *args)
 
-    board = (np.random.rand(w*h) < rnd).reshape((w,h))
+    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
     return board, progress
 
 
