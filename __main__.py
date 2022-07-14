@@ -9,10 +9,10 @@ import pygame
 black = (0,0,0)
 white = (255,255,255)
 gray = (200,200,200)
-blue = (0,0,255)
-dark_blue = (0,0,170)
-red = (255,0,0)
-dark_red = (170,0,0)
+blue = (0,0,100)
+dark_blue = (0,0,100)
+red = (100,0,0)
+dark_red = (100,0,0)
 
 def show(screen, W,H, board, cell_display):
     if len(board.shape) == 1:
@@ -30,7 +30,7 @@ def __main__():
     examples = [(conways_game_of_life, (dim,dim,rnd)),
             (wireworld, (dim,dim)),
             (brians_brain, (dim,dim, rnd)),
-            (traffic_model, (80, 80))]
+            (traffic_model, (80, 80,(0.7,0.8)))]
     e,args = examples[-1]
     board, progress = e(*args)
     history = np.array([board])
@@ -93,16 +93,27 @@ def __main__():
                             right_state = state
                         break
             if keys[pygame.K_LCTRL] and keys[pygame.K_r]:
-                board = get_board(*args)
+                board, progress = e(*args)
             elif keys[pygame.K_LCTRL] and keys[pygame.K_0]:
                 e,args = examples[0]
                 board, progress = e(*args)
+                s = round(W/board.shape[1])
+                calc_pos = lambda pos: (np.floor(pos[1]/s).astype('int'), np.floor(pos[0]/s).astype('int'))
             elif keys[pygame.K_LCTRL] and keys[pygame.K_1]:
                 e,args = examples[1]
                 board, progress = e(*args)
+                s = round(W/board.shape[1])
+                calc_pos = lambda pos: (np.floor(pos[1]/s).astype('int'), np.floor(pos[0]/s).astype('int'))
             elif keys[pygame.K_LCTRL] and keys[pygame.K_2]:
                 e,args = examples[2]
                 board, progress = e(*args)
+                s = round(W/board.shape[1])
+                calc_pos = lambda pos: (np.floor(pos[1]/s).astype('int'), np.floor(pos[0]/s).astype('int'))
+            elif keys[pygame.K_LCTRL] and keys[pygame.K_3]:
+                e,args = examples[3]
+                board, progress = e(*args)
+                s = round(W/board.shape[1])
+                calc_pos = lambda pos: (np.floor(pos[1]/s).astype('int'), np.floor(pos[0]/s).astype('int'))
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1: # Left click
                     left_mouse = True

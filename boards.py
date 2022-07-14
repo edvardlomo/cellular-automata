@@ -7,7 +7,7 @@ def get_board(w,h,rnd=0):
     return (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
 
 def moore_neighbors():
-    """Returns functions allowing for moore neighbors"""
+    """Returns functions allowing for moore neighbors, both cardinal and diagonal directions"""
     # Slice function 
     slice_func = lambda i, j: np.s_[max(i - 1,0):i + 2, max(j-1, 0):j + 2]
 
@@ -28,6 +28,30 @@ def moore_neighbors():
     # Cell function
     c_func = lambda ns: ns["c"]
     return slice_func, edges, c_func
+
+def von_neumann_neighbors():
+    """Returns functions allowing for von neumann neighbors, only based on cardinal directions"""
+    # Edges
+    def edges_f(board, ns, pos_i, pos_j):
+        ns = defaultdict(lambda:0)
+        ns["c"] = board[pos_i, pos_j]
+        ns["l"] = board[pos_i, pos_j - 1]
+        if pos_j == board.shape[1] - 1:
+            ns["r"] = board[pos_i, 0]
+        else:
+            ns["r"] = board[pos_i, pos_j + 1]
+        ns["t"] = board[pos_i - 1, pos_j]
+        if pos_i == board.shape[1] - 1:
+            ns["b"] = board[0, pos_j]
+        else:
+            ns["b"] = board[pos_i + 1,  pos_j]
+        return ns
+
+    edges = edges_f
+
+    # Cell function
+    c_func = lambda ns: ns["c"]
+    return (lambda i, j: None), edges, c_func
 
 def cell_auto_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
     """Returns a 1D board with n cells, rules are given by t. If wanted a cell in middle is turned on with mid, or it can be randomised with rnd."""
@@ -126,76 +150,36 @@ def brians_brain(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=No
     args = (rules, slice_func, edges, c_func)
     progress = lambda b: get_next_board(b, *args)
 
-    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
     return get_board(w,h,rnd), progress
 
-def traffic_model(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None):
+def traffic_model(w, h, rnd=(0,0), rules=None, slice_func=None, edges=None, c_func=None, tight=False):
     """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on Biham-Middleton-Levine traffic model."""
-
     # Rules
     road = 0
-    car_rm = 2
-    car_ru = 3
-    car_bm = 4
-    car_bu = 5
+    car_rm = 2 # right moving car
+    car_ru = 3 # right parked car
+    car_bm = 4 # down moving car
+    car_bu = 5 # down parked car
     if rules == None:
-        c0 = (lambda c, ns: c == road), road
-        c1 = (lambda c, ns: c == car_rm), car_ru
-        c2 = (lambda c, ns: c == car_ru), car_rm
-        c3 = (lambda c, ns: c == car_bm), car_bu
-        c4 = (lambda c, ns: c == car_bu), car_bm
-        rules = [c0, c1, c2, c3, c4]
+        c0 = (lambda c, ns: c == road and ns["l"] == car_rm), car_ru
+        c1 = (lambda c, ns: c == car_rm and ns["r"] == road), road
+        c2 = (lambda c, ns: c == road and ns["t"] == car_bm), car_bu
+        c3 = (lambda c, ns: c == car_bm and ns["b"] == road), road
+        c4 = (lambda c, ns: c == car_rm), car_ru
+        c5 = (lambda c, ns: c == car_ru), car_rm
+        c6 = (lambda c, ns: c == car_bm), car_bu
+        c7 = (lambda c, ns: c == car_bu), car_bm
+        rules = [c0, c1, c2, c3, c4, c5, c6, c7]
 
-    # Edge cases
-    def edges_f(board, ns, pos_i, pos_j):
-        ns = defaultdict(lambda:0)
-        ns["c"] = board[pos_i, pos_j]
-        ns["l"] = board[pos_i, pos_j - 1]
-        if pos_j == board.shape[1] - 1:
-            ns["r"] = board[pos_i, 0]
-        else:
-            ns["r"] = board[pos_i, pos_j + 1]
-        ns["t"] = board[pos_i - 1, pos_j]
-        if pos_i == board.shape[1] - 1:
-            ns["b"] = board[0, pos_j]
-        else:
-            ns["b"] = board[pos_i + 1,  pos_j]
-
-        # Needed for stuck car logic
-        if ns["c"] == road and ns["l"] == car_rm:
-            ns["c"] = car_rm
-        if ns["c"] == road and ns["t"] == car_bm:
-            ns["c"] = car_bm
-        elif ns["c"] == car_rm and ns["l"] != car_rm:
-            l = board.shape[1]
-            for j in range(1, l):
-                front_car = board[pos_i, (pos_j + j) % l]
-                if front_car == road:
-                    ns["c"] = road
-                    break
-                elif front_car == car_bu:
-                    break
-        elif ns["c"] == car_bm and ns["t"] != car_bm:
-            l = board.shape[0]
-            for i in range(1, l):
-                front_car = board[(pos_i + i) % l, pos_j]
-                if front_car == road:
-                    ns["c"] = road
-                    break
-                elif front_car == car_ru:
-                    break
-        return ns
-
-    edges = edges_f
-
-    # Cell function
-    c_func = lambda ns: ns["c"]
+    # von Neumann neighbors
+    slice_func, edges, c_func = von_neumann_neighbors()
 
     args = (rules, slice_func, edges, c_func)
     progress = lambda b: get_next_board(b, *args)
 
-    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
-    return get_board(w,h,rnd), progress
+    board = np.array([road if e < rnd[0] else car_rm if e < rnd[1] else car_bu \
+            for e in np.random.rand(w*h)]).reshape((w,h)).astype('int')
+    return board, progress
 
 
 
