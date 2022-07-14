@@ -8,6 +8,9 @@ import pygame
 
 black = (0,0,0)
 white = (255,255,255)
+blue = (0,0,255)
+red = (255,0,0)
+
 
 def show(screen, W,H, board, cell_display):
     if len(board.shape) == 1:
@@ -18,16 +21,16 @@ def show(screen, W,H, board, cell_display):
         for i,c in enumerate(r):
             x,y = i*s, (j*s) % H
             cell_display[c](x, y, s)
-            #if c == 1:
-            #    pygame.draw.rect(screen, white, pygame.Rect(x,y,s,s))
 
 def __main__():
     #board, progress = cell_auta_1d(100, 182, mid=True)
-    board, progress = conways_game_of_life(100, 100, state_dict=None, rnd=0.5)
+    #board, progress = conways_game_of_life(70, 70, state_dict=None, rnd=0.5)
+    board, progress = wireworld(70, 70, state_dict=None, rnd=0)
     history = np.array([board])
 
     # graphics
     W,H = 1000, 1000
+    W,H = W - (W % board.shape[0]), H - (H % board.shape[1])
     pygame.init()
     screen = pygame.display.set_mode((W,H))
 
@@ -39,8 +42,9 @@ def __main__():
     # Display cells
     cell_display = {0: (lambda x, y, s: None),
             1: (lambda x, y, s: pygame.draw.rect(screen, white, pygame.Rect(x,y,s,s))),
-            2: (lambda x, y, s: pygame.draw.rect(screen, (0,0,255), pygame.Rect(x,y,s,s)))}
-
+            2: (lambda x, y, s: pygame.draw.rect(screen, red, pygame.Rect(x,y,s,s))),
+            3: (lambda x, y, s: pygame.draw.rect(screen, blue, pygame.Rect(x,y,s,s)))}
+    cell_display = defaultdict(lambda: lambda x, y, s:None, cell_display)
 
     history_bool = len(board.shape) == 1
     loop_bool = True

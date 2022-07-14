@@ -47,10 +47,10 @@ def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c
 
     # Rules
     if rules == None:
-        cond1 = lambda c, ns: c == 1 and ns[1] - 1 < 2
-        cond2 = lambda c, ns: c == 1 and ns[1] - 1 > 3
-        cond3 = lambda c, ns: c == 0 and ns[1] == 3
-        rules = [(cond1, 0), (cond2, 0), (cond3, 1)]
+        cond1 = (lambda c, ns: c == 1 and ns[1] - 1 < 2),0
+        cond2 = (lambda c, ns: c == 1 and ns[1] - 1 > 3),0
+        cond3 = (lambda c, ns: c == 0 and ns[1] == 3),1
+        rules = [cond1, cond2, cond3]
     
     # Slice function 
     if slice_func == None:
@@ -81,4 +81,42 @@ def conways_game_of_life(w, h, rnd=0, rules=None, slice_func=None, edges=None, c
     board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
     return board, progress
 
+def wireworld(w, h, rnd=0, rules=None, slice_func=None, edges=None, c_func=None, state_dict=defaultdict(lambda:None)):
+    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on conway's game of life"""
+
+    # Rules
+    if rules == None:
+        cond1 = (lambda c, ns: c == 2),3
+        cond2 = (lambda c, ns: c == 3),1
+        cond3 = (lambda c, ns: c == 1 and ns[2] in [1,2]),2
+        cond4 = (lambda c, ns: c == 1),1
+        rules = [cond1, cond2, cond3, cond4]
+    
+    # Slice function 
+    if slice_func == None:
+        slice_func = lambda i, j: np.s_[max(i - 1,0):i + 2, max(j-1, 0):j + 2]
+
+    # Edge cases
+    def edges_f(board, ns, pos_i, pos_j):
+        i,j = 1,1
+        if pos_i == 0:
+            i -= 1
+        if pos_j == 0:
+            j -= 1
+        c = ns[j,i]
+        ns = defaultdict(lambda:0,zip(*np.unique(ns, return_counts=True)))
+        ns["c"] = c
+        return ns
+    if edges == None:
+        edges = edges_f
+
+    # Cell function
+    if c_func == None:
+        c_func = lambda ns: ns["c"]
+
+    args = (rules, slice_func, edges, c_func, state_dict)
+    progress = lambda b: get_next_board(b, *args)
+
+    board = (np.random.rand(w*h) < rnd).reshape((w,h)).astype('int')
+    return board, progress
 
