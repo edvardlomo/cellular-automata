@@ -26,6 +26,7 @@ def show(screen, W,H, board, cell_display):
 
 def __main__():
     #board, progress = cell_auto_1d(100, 182, mid=True)
+    # "Night and Day: B3678/S34678
     dim, rnd = 70, 0.5
     examples = [(BS_notation, (dim,dim,[3],[2,3],rnd)),
             (wireworld, (dim,dim)),
