@@ -93,16 +93,14 @@ def cell_auto_1d(n, t=110, mid=False, rnd=0, rules=None, slice_func=None, edges=
         board[n//2] = 1
     return board, progress
 
-def conways_game_of_life(w, h, rnd=0, rules=None):
-    """Returns a 2D wxh board. It can be randomised with rnd. Rules are based on conway's game of life"""
+
+def BS_notation(w, h, B=[3], S=[2,3], rnd=0, rules=None):
+    """Returns a 2D wxh board. It can be randomised with rnd. Rules follow B/S notation, B for born, S for survival, the numbers in the lists refer to living neighbors."""
 
     # Rules
     if rules == None:
-        cond1 = (lambda c, ns: c == 1 and ns[1] - 1 < 2),0
-        cond2 = (lambda c, ns: c == 1 and ns[1] - 1 > 3),0
-        cond3 = (lambda c, ns: c == 0 and ns[1] == 3),1
-        rules = [cond1, cond2, cond3]
-    
+        rules = [((lambda c, ns: c == 0 and ns[1] in B),1),
+                ((lambda c, ns: c == 1 and ns[1]-1 not in S),0)]
 
     # Moore neighbors
     slice_func, edges, c_func = moore_neighbors()

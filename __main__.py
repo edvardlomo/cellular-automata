@@ -27,7 +27,7 @@ def show(screen, W,H, board, cell_display):
 def __main__():
     #board, progress = cell_auto_1d(100, 182, mid=True)
     dim, rnd = 70, 0.5
-    examples = [(conways_game_of_life, (dim,dim,rnd)),
+    examples = [(BS_notation, (dim,dim,[3],[2,3],rnd)),
             (wireworld, (dim,dim)),
             (brians_brain, (dim,dim, rnd)),
             (traffic_model, (80, 80,(0.7,0.8)))]
