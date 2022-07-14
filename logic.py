@@ -18,7 +18,7 @@ def gen_pos(shape):
     return ((i, *subpos) for subpos in gen_subpos for i in range(shape[0]))
 
 
-def get_next_board(board, rules, slice_func, edges, c_func):
+def get_next_board(board, rules, slice_func, edges, c_func, state_dict=None):
     """
         1. Makes empty board, same size as previous board
         For every position of the board:
@@ -38,5 +38,12 @@ def get_next_board(board, rules, slice_func, edges, c_func):
     for pos in gen_pos(board.shape):
         ns = board[slice_func(*pos)]
         ns = edges(board, ns, *pos)
-        new_board[pos] = get_next_state(rules, c_func(ns), ns)
+        if state_dict != None:
+            next_state = state_dict[tuple(ns)]
+            if next_state == None:
+                state_dict[tuple(ns)] = get_next_state(rules, c_func(ns), ns)
+                next_state = state_dict[tuple(ns)]
+        else:
+            next_state = get_next_state(rules, c_func(ns), ns)
+        new_board[pos] = next_state
     return new_board.astype('int')
